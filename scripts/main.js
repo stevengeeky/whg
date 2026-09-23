@@ -12,7 +12,6 @@ var mc, ctx;
 var player, enemies = [], levelCompleted = false;
 var blocks = [], bs = 32, bl = 256;
 
-var reform = false;
 var ps = 24, es = 12, wlw = 1.5;
 
 var mouse = {
@@ -178,8 +177,7 @@ function _loop()
     }
     
     mouse.fdown = false;
-    mouse.fup = true;
-    reform = false;
+    mouse.fup = false;
 }
 
 function handleBuffered()
@@ -292,9 +290,6 @@ function update()
             var cx = x / bs, cy = y / bs;
             b = bget(cx, cy);
             
-            if (reform && !isWall(b))
-                bset(cx, cy, b)
-            
             if (typeof b != "undefined")
             {
                 var ty = b.type;
@@ -313,72 +308,18 @@ function update()
                 else if (ty == "cm")
                     drawr(r, "lightgreen");
                 
-                // Walls
-                else if (ty == "tw")
-                    drawl(r.x, r.y, r.x + r.width, r.y, "black", wlw);
-                else if (ty == "bw")
-                    drawl(r.x, r.y + r.height, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                else if (ty == "rw")
-                    drawl(r.x + r.width, r.y, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                else if (ty == "lw")
-                    drawl(r.x, r.y, r.x, r.y + r.height, "black", wlw);
-                
-                else if (ty == "brw")
+                // Walls: one line per edge that touches floor (t, b, l, r).
+                // Bottom and right lines are drawn twice as thick because the floor tile drawn after this one covers half of them.
+                else if (isWall(b))
                 {
-                    drawl(r.x, r.y + r.height, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                    drawl(r.x + r.width, r.y, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                }
-                else if (ty == "trw")
-                {
-                    drawl(r.x, r.y, r.x + r.width, r.y, "black", wlw);
-                    drawl(r.x + r.width, r.y, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                }
-                else if (ty == "blw")
-                {
-                    drawl(r.x, r.y + r.height, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                    drawl(r.x, r.y, r.x, r.y + r.height, "black", wlw);
-                }
-                else if (ty == "tlw")
-                {
-                    drawl(r.x, r.y, r.x + r.width, r.y, "black", wlw);
-                    drawl(r.x, r.y, r.x, r.y + r.height, "black", wlw);
-                }
-                
-                else if (ty == "tbw")
-                {
-                    drawl(r.x, r.y, r.x + r.width, r.y, "black", wlw);
-                    drawl(r.x, r.y + r.height, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                }
-                else if (ty == "lrw")
-                {
-                    drawl(r.x, r.y, r.x, r.y + r.height, "black", wlw);
-                    drawl(r.x + r.width, r.y, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                }
-                
-                //
-                else if (ty == "lbrw")
-                {
-                    drawl(r.x, r.y, r.x, r.y + r.height, "black", wlw);
-                    drawl(r.x, r.y + r.height, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                    drawl(r.x + r.width, r.y, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                }
-                else if (ty == "brtw")
-                {
-                    drawl(r.x, r.y + r.height, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                    drawl(r.x + r.width, r.y, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                    drawl(r.x, r.y, r.x + r.width, r.y, "black", wlw);
-                }
-                else if (ty == "rtlw")
-                {
-                    drawl(r.x + r.width, r.y, r.x + r.width, r.y + r.height, "black", wlw * 2);
-                    drawl(r.x, r.y, r.x + r.width, r.y, "black", wlw);
-                    drawl(r.x, r.y, r.x, r.y + r.height, "black", wlw);
-                }
-                else if (ty == "tlbw")
-                {
-                    drawl(r.x, r.y, r.x + r.width, r.y, "black", wlw);
-                    drawl(r.x, r.y, r.x, r.y + r.height, "black", wlw);
-                    drawl(r.x, r.y + r.height, r.x + r.width, r.y + r.height, "black", wlw * 2);
+                    if (ty.indexOf("t") != -1)
+                        drawl(r.x, r.y, r.x + r.width, r.y, "black", wlw);
+                    if (ty.indexOf("b") != -1)
+                        drawl(r.x, r.y + r.height, r.x + r.width, r.y + r.height, "black", wlw * 2);
+                    if (ty.indexOf("l") != -1)
+                        drawl(r.x, r.y, r.x, r.y + r.height, "black", wlw);
+                    if (ty.indexOf("r") != -1)
+                        drawl(r.x + r.width, r.y, r.x + r.width, r.y + r.height, "black", wlw * 2);
                 }
                 
             }
@@ -588,162 +529,47 @@ function bget(x, y)
 {
     return blocks[y * bl + x];
 }
-function bset(x, y, b, ov)
+function bset(x, y, b)
 {
     if (x instanceof Array)
+    {
         for (var i = 0; i < x.length; i += 2)
             bset(x[i], x[i + 1], y);
-    
-    var tb = b;
-    if (typeof tb != "undefined")
-    {
-        if (tb.type == "t" || tb.type == "ta" || tb.type == "tb" || tb.type == "cm")
-        {
-            if (isntFloor(x, y - 1))
-            {
-                /*if (!isntFloor(x + 1, y - 1) && !isntFloor(x - 1, y - 1) && isntFloor(x, y - 2))
-                    bset(x, y - 1, new block("lbrw"));
-                else if (!isntFloor(x, y - 2) && !isntFloor(x - 1, y - 1) && isntFloor(x + 1, y - 1))
-                    bset(x, y - 1, new block("tlbw"));
-                else if (!isntFloor(x, y - 2) && !isntFloor(x + 1, y - 1) && isntFloor(x - 1, y - 1))
-                    bset(x, y - 1, new block("brtw"));
-                */
-                /*else if (!isntFloor(x, y - 2) && isntFloor(x + 1, y - 1) && isntFloor(x - 1, y - 1))
-                    bset(x, y - 1, new block("tbw"));
-                */
-                if (!isntFloor(x + 1, y - 1))
-                    bset(x, y - 1, new block("brw"));
-                else if (!isntFloor(x - 1, y - 1))
-                    bset(x, y - 1, new block("blw"));
-                else
-                    bset(x, y - 1, new block("bw"));
-            }
-            if (isntFloor(x, y + 1))
-            {
-                /*if (!isntFloor(x - 1, y + 1) && !isntFloor(x + 1, y + 1) && isntFloor(x, y + 2))
-                    bset(x, y + 1, new block("rtlw"));
-                else if (!isntFloor(x, y + 2) && !isntFloor(x + 1, y + 1) && isntFloor(x - 1, y + 1))
-                    bset(x, y + 1, new block("brtw"));
-                else if (!isntFloor(x, y + 2) && !isntFloor(x - 1, y + 1) && isntFloor(x + 1, y + 1))
-                    bset(x, y + 1, new block("tlbw"));
-                */
-                /*else if (!isntFloor(x, y + 2) && isntFloor(x + 1, y + 1) && isntFloor(x - 1, y + 1))
-                    bset(x, y + 1, new block("tbw"));
-                */
-                if (!isntFloor(x - 1, y + 1))
-                    bset(x, y + 1, new block("tlw"));
-                else if (!isntFloor(x + 1, y + 1))
-                    bset(x, y + 1, new block("trw"));
-                else
-                    bset(x, y + 1, new block("tw"));
-            }
-            if (isntFloor(x - 1, y))
-            {
-                /*if (!isntFloor(x - 1, y - 1) && !isntFloor(x - 1, y + 1) && isntFloor(x - 2, y))
-                    bset(x - 1, y, new block("brtw"));
-                else if (!isntFloor(x - 2, y) && !isntFloor(x - 1, y - 1) && isntFloor(x - 1, y + 1))
-                    bset(x - 1, y, new block("rtlw"));
-                else if (!isntFloor(x - 2, y) && !isntFloor(x - 1, y + 1) && isntFloor(x - 1, y - 1))
-                    bset(x - 1, y, new block("lbrw"));
-                */
-                /*else if (!isntFloor(x - 2, y) && isntFloor(x - 1, y + 1) && isntFloor(x - 1, y - 1))
-                    bset(x - 1, y, new block("lrw"));
-                */
-                if (!isntFloor(x - 1, y - 1))
-                    bset(x - 1, y, new block("trw"));
-                else if (!isntFloor(x - 1, y + 1))
-                    bset(x - 1, y, new block("brw"));
-                else
-                    bset(x - 1, y, new block("rw"));
-            }
-            if (isntFloor(x + 1, y))
-            {
-                /*if (!isntFloor(x + 1, y - 1) && !isntFloor(x + 1, y + 1) && isntFloor(x + 2, y))
-                    bset(x + 1, y, new block("tlbw"));
-                else if (!isntFloor(x + 2, y) && !isntFloor(x + 1, y - 1) && isntFloor(x + 1, y + 1))
-                    bset(x + 1, y, new block("tlbw"));
-                else if (!isntFloor(x + 2, y) && !isntFloor(x + 1, y + 1) && isntFloor(x + 1, y - 1))
-                    bset(x + 1, y, new block("lbrw"));
-                */
-                /*else if (!isntFloor(x + 2, y) && isntFloor(x + 1, y - 1) && isntFloor(x + 1, y + 1))
-                    bset(x + 1, y, new block("lrw"));
-                */
-                if (!isntFloor(x + 1, y - 1))
-                    bset(x + 1, y, new block("tlw"));
-                else if (!isntFloor(x + 1, y + 1))
-                    bset(x + 1, y, new block("blw"));
-                else
-                    bset(x + 1, y, new block("lw"));
-            }
-        }
-    }
-    else if (!ov && (isWall(bget(x - 1, y)) || isWall(bget(x + 1, y)) || isWall(bget(x, y - 1)) || isWall(bget(x, y + 1))) )
-    {
-        if (bget(x - 1, y) != undefined)
-        {
-            if (bget(x - 1, y).type.replace(/lbrw|brtw|rtlw/g, "") == "")
-                bset(x - 1, y, undefined);
-            
-            else if (bget(x - 1, y).type == "brw")
-                bset(x - 1, y, new block("bw"));
-            else if (bget(x - 1, y).type == "trw")
-                bset(x - 1, y, new block("tw"));
-            else if (bget(x - 1, y).type == "rw")
-                bset(x - 1, y, undefined, true);
-            reform = true;
-        }
-        if (bget(x, y - 1) != undefined)
-        {
-            if (bget(x, y - 1).type.replace(/tlbw|lbrw|brtw/g, "") == "")
-                bset(x, y - 1, undefined);
-            
-            else if (bget(x, y - 1).type == "brw")
-                bset(x, y - 1, new block("rw"));
-            else if (bget(x, y - 1).type == "blw")
-                bset(x, y - 1, new block("lw"));
-            else if (bget(x, y - 1).type == "bw")
-                bset(x, y - 1, undefined, true);
-            reform = true;
-        }
-        if (bget(x + 1, y) != undefined)
-        {
-            if (bget(x + 1, y).type.replace(/rtlw|tlbw|lbrw/g, "") == "")
-                bset(x + 1, y, undefined);
-            
-            else if (bget(x + 1, y).type == "tlw")
-                bset(x + 1, y, new block("tw"));
-            else if (bget(x + 1, y).type == "blw")
-                bset(x + 1, y, new block("bw"));
-            else if (bget(x + 1, y).type == "lw")
-                bset(x + 1, y, undefined, true);
-            reform = true;
-        }
-        if (bget(x, y + 1) != undefined)
-        {
-            if (bget(x, y + 1).type.replace(/tlbw|lbrw|brtw/g, "") == "")
-                bset(x, y + 1, undefined, true);
-            
-            else if (bget(x, y + 1).type == "tlw")
-                bset(x, y + 1, new block("lw"));
-            else if (bget(x, y + 1).type == "trw")
-                bset(x, y + 1, new block("rw"));
-            else if (bget(x, y + 1).type == "tw")
-                bset(x, y + 1, undefined, true);
-            reform = true;
-        }
+        return;
     }
     
     blocks[y * bl + x] = b;
+    
+    // Walls are derived from the floor around them, so every tile touching this one is re-derived
+    rewall(x, y);
+    rewall(x, y - 1);
+    rewall(x, y + 1);
+    rewall(x - 1, y);
+    rewall(x + 1, y);
 }
 
-function isntFloor(x, y)
+function rewall(x, y)   // Turns a non-floor tile into a wall with one edge per neighbouring floor tile (or into nothing)
+{
+    if (isFloor(x, y))
+        return;
+    
+    var ty = "";
+    if (isFloor(x, y - 1))
+        ty += "t";
+    if (isFloor(x, y + 1))
+        ty += "b";
+    if (isFloor(x - 1, y))
+        ty += "l";
+    if (isFloor(x + 1, y))
+        ty += "r";
+    
+    blocks[y * bl + x] = ty == "" ? undefined : new block(ty + "w");
+}
+
+function isFloor(x, y)
 {
     var b = bget(x, y);
-    
-    if (typeof b != "undefined") {
-        return b.type.replace(/tw|bw|lw|rw|trw|brw|tlw|blw/g, "") == "";
-    }
-    return true;
+    return typeof b != "undefined" && !isWall(b);
 }
 
 function cmod(n, v)
