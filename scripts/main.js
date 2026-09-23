@@ -1,5 +1,4 @@
 // World's Hardest Game Remake
-// By Steven Geeky
 
 // Modifiable Declarations
 var _levels = [], clevel = 0, playerOpacity = 1, screenFadeOpacity = 0;

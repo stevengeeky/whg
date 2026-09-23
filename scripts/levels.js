@@ -1,5 +1,4 @@
 // World's Hardest Game Remake - levels
-// By Steven Geeky
 //
 // The play area is 18 x 12 tiles: columns -9 to 8, rows -6 to 5.
 // fill(x0, y0, x1, y1, type) lays tiles ("t" floor, "sp" start pad, "cm" goal), spawn(x, y) places the player,
